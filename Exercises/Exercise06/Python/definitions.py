@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 # Order of the square matrices A, B and C
 ORDER = 1024
@@ -15,4 +16,4 @@ TOL = 0.001
 DIM = 2
 
 # number of times to do each multiplication
-COUNT = 1
+COUNT = 2

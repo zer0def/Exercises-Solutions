@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 from definitions import *
 import numpy
@@ -25,7 +26,9 @@ def error(Mdim, Ndim, Pdim, C):
 # Function to analyze and output results
 def results(Mdim, Ndim, Pdim, C, run_time):
     mflops = 2.0 * Mdim * Ndim * Pdim/(1000000.0* run_time)
-    print run_time, "seconds at", mflops, "MFLOPS"
+    print("{run_time} seconds at {mflops} MFLOPS".format(
+        run_time=run_time, mflops=mflops
+    ))
     errsq = error(Mdim, Ndim, Pdim, C)
     if numpy.isnan(errsq) or errsq > TOL:
-        print "Errors in multiplication:", errsq
+        print("Errors in multiplication: {0}".format(errsq))

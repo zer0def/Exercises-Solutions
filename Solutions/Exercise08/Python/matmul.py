@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Matrix Multiplication Driver
 #
@@ -41,13 +42,13 @@ h_B.fill(BVAL)
 # C matrix
 h_C = numpy.empty(size).astype(numpy.float32)
 
-print "\n===== Sequential, matrix mult (dot prod), order", ORDER, "on host CPU ======\n"
+print("===== Sequential, matrix mult (dot prod), order {0} on host CPU ======".format(ORDER))
 
 for i in range(COUNT):
     h_C.fill(0.0)
     start_time = time()
 
-    print "Skipping as this takes a long time to run!"
+    print("Skipping as this takes a long time to run!")
     #seq_mat_mul_sdot(N, h_A, h_B, h_C)
 
     run_time = time() - start_time
@@ -79,7 +80,7 @@ kernelsource = open("../C_elem.cl").read()
 program = cl.Program(context, kernelsource).build()
 mmul = program.mmul
 mmul.set_scalar_arg_dtypes([numpy.int32, None, None, None])
-print "\n===== OpenCL, matrix mult, C(i,j) per work item, order", N, "======\n"
+print("===== OpenCL, matrix mult, C(i,j) per work item, order {0} ======".format(N))
 
 # Do the multiplication COUNT times
 for i in range(COUNT):
@@ -102,13 +103,13 @@ kernelsource = open("../C_row.cl").read()
 program = cl.Program(context, kernelsource).build()
 mmul = program.mmul
 mmul.set_scalar_arg_dtypes([numpy.int32, None, None, None])
-print "\n===== OpenCL, matrix mult, C row per work item, order", N, "======\n"
+print("===== OpenCL, matrix mult, C row per work item, order {0} ======".format(N))
 # Do the multiplication COUNT times
 for i in range(COUNT):
     h_C.fill(0.0)
     start_time = time()
 
-    mmul(queue, (N,), (ORDER/16,), N, d_a, d_b, d_c)
+    mmul(queue, (N,), (int(ORDER/16),), N, d_a, d_b, d_c)
     queue.finish()
 
     run_time = time() - start_time
@@ -124,13 +125,13 @@ kernelsource = open("../C_row_priv.cl").read()
 program = cl.Program(context, kernelsource).build()
 mmul = program.mmul
 mmul.set_scalar_arg_dtypes([numpy.int32, None, None, None])
-print "\n===== OpenCL, matrix mult, C row, A row in priv mem, order", N, "======\n"
+print("===== OpenCL, matrix mult, C row, A row in priv mem, order {0} ======".format(N))
 # Do the multiplication COUNT times
 for i in range(COUNT):
     h_C.fill(0.0)
     start_time = time()
 
-    mmul(queue, (N,), (ORDER/16,), N, d_a, d_b, d_c)
+    mmul(queue, (N,), (int(ORDER/16),), N, d_a, d_b, d_c)
     queue.finish()
 
     run_time = time() - start_time
@@ -146,15 +147,15 @@ kernelsource = open("../C_row_priv_bloc.cl").read()
 program = cl.Program(context, kernelsource).build()
 mmul = program.mmul
 mmul.set_scalar_arg_dtypes([numpy.int32, None, None, None, None])
-print "\n===== OpenCL, mat mult, C row, priv A, B cols loc, order", N, "======\n"
+print("===== OpenCL, mat mult, C row, priv A, B cols loc, order {0} ======".format(N))
 # Do the multiplication COUNT times
 for i in range(COUNT):
     h_C.fill(0.0)
     start_time = time()
 
     localmem = cl.LocalMemory(numpy.dtype(numpy.float32).itemsize * N)
-    mmul(queue, (N,), (ORDER/16,), N,
-    	d_a, d_b, d_c, localmem)
+    mmul(queue, (N,), (int(ORDER/16),), N,
+        d_a, d_b, d_c, localmem)
     queue.finish()
 
     run_time = time() - start_time
@@ -170,7 +171,7 @@ kernelsource = open("../C_block_form.cl").read()
 program = cl.Program(context, kernelsource).build()
 mmul = program.mmul
 mmul.set_scalar_arg_dtypes([numpy.int32, None, None, None, None, None])
-print "\n==== Parallel matrix mult (blocked), order {0} on device ======\n".format(N)
+print("==== Parallel matrix mult (blocked), order {0} on device ======".format(N))
 # Do the multiplication COUNT times
 for i in range(COUNT):
     h_C.fill(0.0)

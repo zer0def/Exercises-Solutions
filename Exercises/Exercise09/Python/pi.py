@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # This program will numerically compute the integral of
 #
@@ -16,25 +17,18 @@ from time import time
 
 num_steps = 100000000
 
-print "\nNote: Wanted to do", num_steps, "steps, but this is very slow in Python."
+print("Note: Wanted to do {0} steps, but this is very slow in Python.".format(num_steps))
 
 num_steps = 1000000
 
-print "Doing", num_steps, "steps instead."
-
-integral_sum = 0.0
-
-step = 1.0/num_steps
+print("Doing {0} steps instead.".format(num_steps))
 
 start_time = time()
 
-for i in range(1,num_steps):
-    x = (i-0.5)*step
-    integral_sum += 4.0/(1.0+x*x)
-
-pi = step * integral_sum
-
-run_time = time() - start_time;
-
-print "\npi with", num_steps, "steps is", pi, "in", run_time, "seconds\n"
-
+print("pi with {steps} steps is {result} in {run_time} seconds".format(
+    steps=num_steps,
+    result=sum([
+        4.0/(1.0+((i-0.5)/float(num_steps))**2) for i in range(1, num_steps)
+    ])/float(num_steps),
+    run_time=time()-start_time
+))

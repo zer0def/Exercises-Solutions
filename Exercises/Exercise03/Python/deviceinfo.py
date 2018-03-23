@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Device Info
 #
@@ -10,17 +11,19 @@
 import pyopencl as cl
 import sys
 
+DEVICE_FMT = """Device is {name}
+{type} from {vendor} with a max of {max_computes} compute units"""
+
 def output_device_info(device_id):
-    sys.stdout.write("Device is ")
-    sys.stdout.write(device_id.name)
+    device_type = "unknown unit type"
     if device_id.type == cl.device_type.GPU:
-        sys.stdout.write("GPU from ")
+        device_type = "GPU"
     elif device_id.type == cl.device_type.CPU:
-        sys.stdout.write("CPU from ")
-    else:
-        sys.stdout.write("non CPU of GPU processor from ")
-    sys.stdout.write(device_id.vendor)
-    sys.stdout.write(" with a max of ")
-    sys.stdout.write(str(device_id.max_compute_units))
-    sys.stdout.write(" compute units\n")
-    sys.stdout.flush()
+        device_type = "CPU"
+
+    print(DEVICE_FMT.format(
+        name=device_id.name,
+        type=device_type,
+        vendor=device_id.vendor,
+        max_computes=device_id.max_compute_units
+    ))

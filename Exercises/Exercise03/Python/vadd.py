@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Vadd
 #
@@ -90,7 +91,7 @@ vadd(queue, h_a.shape, None, d_a, d_b, d_c, LENGTH)
 # Wait for the commands to finish before reading back
 queue.finish()
 rtime = time() - rtime
-print "The kernel ran in", rtime, "seconds"
+print("The kernel ran in {0} seconds".format(rtime))
 
 # Read back the results from the compute device
 cl.enqueue_copy(queue, h_c, d_c)
@@ -106,7 +107,11 @@ for a, b, c in zip(h_a, h_b, h_c):
     if tmp*tmp < TOL*TOL:
         correct += 1
     else:
-        print "tmp", tmp, "h_a", a, "h_b", b, "h_c", c
+        print("tmp: {tmp}, h_a: {a}, h_b: {b}, h_c: {c}".format(
+            tmp=tmp, a=a, b=b, c=c
+        ))
 
 # Summarize results
-print "C = A+B:", correct, "out of", LENGTH, "results were correct."
+print("C = A+B: {correct} out of {length} results were correct.".format(
+    correct=correct, length=LENGTH
+))

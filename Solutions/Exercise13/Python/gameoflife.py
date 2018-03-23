@@ -12,6 +12,8 @@ import pyopencl as cl
 import numpy
 import sys
 
+_range = range if sys.version_info.major == 3 else xrange
+
 FINALSTATEFILE = "final_state.dat"
 
 # Define the state of the cell
@@ -26,12 +28,12 @@ def main():
 
     # Check we have a starting state file
     if len(sys.argv) != 5:
-        print '''Usage:
+        print('''Usage:
         python gameoflife.py input.dat input.params bx by
         \tinput.dat\tpattern file
         \tinput.params\tparater file defining board size
         \tbx by\t\tsizes of the thread blocks - must divide the board size equally
-        '''
+        ''')
         sys.exit(-1)
 
     # Board dimensions and iterations total
@@ -59,7 +61,7 @@ def main():
     cl.enqueue_copy(queue, d_board_tick, h_board)
 
     # Display the starting state
-    print 'Starting state'
+    print('Starting state')
     print_board(h_board, nx, ny)
 
     # Set the global and local problem sizes
@@ -70,7 +72,7 @@ def main():
     sizeof_char = numpy.dtype(numpy.int8).itemsize
     localmem = cl.LocalMemory(sizeof_char * (bx + 2) * (by + 2))
 
-    for i in xrange(iterations):
+    for i in _range(iterations):
         # Apply the rules of Life
         # Enqueue the kernel
         accelerate_life(queue, global_size, local_size,
@@ -87,7 +89,7 @@ def main():
     cl.enqueue_copy(queue, h_board, d_board_tick)
 
     # Display the final state
-    print 'Final state'
+    print('Final state')
     print_board(h_board, nx, ny)
 
     # Save the final state of the board
@@ -112,8 +114,8 @@ def load_board(board, data, nx, ny):
 
 
 def print_board(board, nx, ny):
-    for i in xrange(ny):
-        for j in xrange(nx):
+    for i in _range(ny):
+        for j in _range(nx):
             if board[i * nx + j] == DEAD:
                 sys.stdout.write('.')
             else:
@@ -124,8 +126,8 @@ def print_board(board, nx, ny):
 
 def save_board(board, nx, ny):
     with open(FINALSTATEFILE, 'w') as f:
-        for i in xrange(ny):
-            for j in xrange(nx):
+        for i in _range(ny):
+            for j in _range(nx):
                 if board[i * nx + j] == ALIVE:
                     f.write('{0} {1} {2}\n'.format(j, i, ALIVE))
 
@@ -140,7 +142,7 @@ def load_params(params):
 
 
 def die(message):
-    print 'Error:', message
+    print('Error: {0}'.format(message))
     sys.exit(-1)
 
 

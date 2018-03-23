@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 from definitions import *
 
@@ -24,7 +25,9 @@ def error(N, C):
 # Function to analyze and output results
 def results(N, C, run_time):
     mflops = 2.0 * N * N * N/(1000000.0* run_time)
-    print run_time, "seconds at", mflops, "MFLOPS"
+    print("{run_time} seconds at {mflops} MFLOPS".format(
+        run_time=run_time, mflops=mflops
+    ))
     errsq = error(N, C)
     if (errsq > TOL):
-        print "Errors in multiplication:", errsq
+        print("Errors in multiplication: {0}".format(errsq))

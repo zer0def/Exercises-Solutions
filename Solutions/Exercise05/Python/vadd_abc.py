@@ -93,7 +93,7 @@ for a, b, c, r in zip(h_a, h_b, h_c, h_r):
     if tmp*tmp < TOL*TOL:
         correct += 1
     else:
-        print "tmp", tmp, "h_a", a, "h_b", b, "h_c", c, "h_r", r
+        print("tmp: {tmp}, h_a: {a}, h_b: {b}, h_c: {c}, h_r: {r}".format(tmp=tmp, a=a, b=b, c=c, r=r))
 
 # Summarize results
-print "1 vector adds to find R = A+B+C:", correct, "out of", LENGTH, "results were correct."
+print("1 vector adds to find R = A+B+C: {correct} out of {length} results were correct.".format(correct=correct, length=LENGTH))

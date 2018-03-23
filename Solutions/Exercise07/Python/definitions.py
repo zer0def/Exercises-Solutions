@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 # Order of the square matrices A, B and C
 ORDER = 1024

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Matrix Multiplication Driver
 #
@@ -25,10 +26,10 @@ from time import time
 
 C_elem_KernelSource = '''
 __kernel void mmul(
-	const int N,
-	__global float* A,
-	__global float* B,
-	__global float* C)
+    const int N,
+    __global float* A,
+    __global float* B,
+    __global float* C)
 {
 }
 '''
@@ -51,13 +52,13 @@ h_B.fill(BVAL)
 # C matrix
 h_C = numpy.empty(size).astype(numpy.float32)
 
-print "\n===== Sequential, matrix mult (dot prod), order", ORDER, "on host CPU ======\n"
+print("===== Sequential, matrix mult (dot prod), order {0} on host CPU ======".format(ORDER))
 
 for i in range(COUNT):
     h_C.fill(0.0)
     start_time = time()
 
-    print "Skipping as this takes a long time to run!"
+    print("Skipping as this takes a long time to run!")
     #seq_mat_mul_sdot(N, h_A, h_B, h_C)
 
     run_time = time() - start_time
@@ -84,7 +85,7 @@ program = cl.Program(context, C_elem_KernelSource).build()
 mmul = program.mmul
 mmul.set_scalar_arg_dtypes([numpy.int32, None, None, None])
 
-print "\n===== OpenCL, matrix mult, C(i,j) per work item, order", N, "======\n"
+print("===== OpenCL, matrix mult, C(i,j) per work item, order {0} ======".format(N))
 
 # Do the multiplication COUNT times
 for i in range(COUNT):

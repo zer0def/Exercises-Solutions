@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Display Device Information
 #
@@ -14,37 +15,46 @@ import pyopencl as cl
 # Create a list of all the platform IDs
 platforms = cl.get_platforms()
 
-print "\nNumber of OpenCL platforms:", len(platforms)
+print("Number of OpenCL platforms: {0}".format(len(platforms)))
 
-print "\n-------------------------"
+PLATFORM_FMT = """-------------------------
+Platform: {name}
+Vendor: {vendor}
+Version: {version}
+Number of devices: {device_count}"""
+
+DEVICE_FMT = """  -------------------------
+    Name: {name}
+    Version: {version}
+    Max. Compute Units: {max_computes}
+    Local Memory Size: {local_mem_size} KB
+    Global Memory Size: {global_mem_size} MB
+    Max Alloc Size: {max_alloc_size} MB
+    Max Work-group Total Size: {max_work_group_size}
+    Max Work-group Dimensions: {max_work_group_dims}"""
 
 # Investigate each platform
 for p in platforms:
-    # Print out some information about the platforms
-    print "Platform:", p.name
-    print "Vendor:", p.vendor
-    print "Version:", p.version
-
     # Discover all devices
     devices = p.get_devices()
-    print "Number of devices:", len(devices)
+
+    # Print out some information about the platforms
+    print(PLATFORM_FMT.format(
+        name=p.name,
+        vendor=p.vendor,
+        version=p.version,
+        device_count=len(devices)
+    ))
 
     # Investigate each device
     for d in devices:
-        print "\t-------------------------"
-        # Print out some information about the devices
-        print "\t\tName:", d.name
-        print "\t\tVersion:", d.opencl_c_version
-        print "\t\tMax. Compute Units:", d.max_compute_units
-        print "\t\tLocal Memory Size:", d.local_mem_size/1024, "KB"
-        print "\t\tGlobal Memory Size:", d.global_mem_size/(1024*1024), "MB"
-        print "\t\tMax Alloc Size:", d.max_mem_alloc_size/(1024*1024), "MB"
-        print "\t\tMax Work-group Total Size:", d.max_work_group_size
-
-        # Find the maximum dimensions of the work-groups
-        dim = d.max_work_item_sizes
-        print "\t\tMax Work-group Dims:(", dim[0], " ".join(map(str, dim[1:])), ")"
-
-        print "\t-------------------------"
-
-    print "\n-------------------------"
+        print(DEVICE_FMT.format(
+            name=d.name,
+            version=d.opencl_c_version,
+            max_computes=d.max_compute_units,
+            local_mem_size=d.local_mem_size/2**10,
+            global_mem_size=d.global_mem_size/2**20,
+            max_alloc_size=d.max_mem_alloc_size/2**20,
+            max_work_group_size=d.max_work_group_size,
+            max_work_group_dims=d.max_work_item_sizes
+        ))
