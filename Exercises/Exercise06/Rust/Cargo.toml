@@ -1,0 +1,8 @@
+[package]
+name = "exercise06"
+version = "0.1.0"
+authors = ["zer0def <zer0def@zer0def.0>"]
+
+[dependencies]
+ocl = "0.17"
+float-cmp = "0.4.0"

@@ -1,3 +1,7 @@
+# Rust
+**/Rust/target/
+**/Rust/Cargo.lock
+
 # Python
 
 *.pyc
