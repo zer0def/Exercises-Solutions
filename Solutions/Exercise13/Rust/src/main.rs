@@ -55,30 +55,37 @@ fn post_rustbook() -> Result<(), ocl::error::Error> {
 
     let mut kernel_src = String::new();
     std::fs::File::open("../gameoflife.cl")?.read_to_string(&mut kernel_src)?;
-    let proque = ocl::ProQue::builder().src(kernel_src.clone()).build()?;
+    let proque = ocl::ProQue::builder()
+        .src(kernel_src.clone())
+        .dims(h_board.len())
+        .build()?;
 
-    let mut d_board_tick = ocl::Buffer::<ocl::prm::cl_char>::builder()
-        .queue(proque.queue().clone())
+    let mut d_board_tick = proque
+        .buffer_builder()
         .len(h_board.len())
         .flags(ocl::flags::MemFlags::new().read_write())
         .build()?;
     d_board_tick.write(&h_board).enq()?;
 
-    let mut d_board_tock = ocl::Buffer::<ocl::prm::cl_char>::builder()
-        .queue(proque.queue().clone())
+    let mut d_board_tock = proque
+        .buffer_builder()
         .len(h_board.len())
         .flags(ocl::flags::MemFlags::new().read_write())
         .build()?;
 
-    let mut kernel = proque
-        .create_kernel("accelerate_life")?
-        .gws((nx, ny))
-        .lws((bx, by))
-        .arg_buf_named("tick", Some(&d_board_tick))
-        .arg_buf_named("tock", Some(&d_board_tock))
-        .arg_scl(nx)
-        .arg_scl(ny)
-        .arg_loc::<ocl::prm::cl_char>((bx + 2) * (by + 2));
+    let kernel = proque
+        .kernel_builder("accelerate_life")
+        .global_work_size((nx, ny))
+        .local_work_size((bx, by))
+        .arg_named("tick", Some(&d_board_tick))
+        .arg_named("tock", Some(&d_board_tock))
+        .arg(nx)
+        .arg(ny)
+        .arg_local::<ocl::prm::cl_char>((bx + 2) * (by + 2))
+        .build()?;
+
+    println!("{:?}", kernel.get_gws());
+    println!("{:?}", kernel.get_lws());
 
     println!("Starting state");
     print_board(h_board.clone(), nx);
@@ -91,8 +98,8 @@ fn post_rustbook() -> Result<(), ocl::error::Error> {
         d_board_tick = d_board_tock;
         d_board_tock = tmp;
 
-        kernel.set_arg_buf_named("tick", Some(&d_board_tick))?;
-        kernel.set_arg_buf_named("tock", Some(&d_board_tock))?;
+        kernel.set_arg("tick", Some(&d_board_tick))?;
+        kernel.set_arg("tock", Some(&d_board_tock))?;
     }
 
     d_board_tick.read(&mut h_board).enq()?;

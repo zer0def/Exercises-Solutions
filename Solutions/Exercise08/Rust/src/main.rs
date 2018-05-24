@@ -12,7 +12,10 @@ const BVAL: ocl::prm::cl_float = 5.0;
 const COUNT: usize = 2;
 
 fn post_rustbook() -> Result<(), ocl::error::Error> {
-    let order = match ocl::Context::builder().build()?.device_info(0, ocl::enums::DeviceInfo::MaxWorkGroupSize)? {
+    let order = match ocl::Context::builder()
+        .build()?
+        .device_info(0, ocl::enums::DeviceInfo::MaxWorkGroupSize)?
+    {
         ocl::enums::DeviceInfoResult::MaxWorkGroupSize(value) => value,
         _ => panic!(""),
     } as usize;
@@ -63,43 +66,35 @@ fn post_rustbook() -> Result<(), ocl::error::Error> {
         println!("===== {}, order {} =====", title, order);
         let mut kernel_src = String::new();
         std::fs::File::open(path)?.read_to_string(&mut kernel_src)?;
-        let proque = ocl::ProQue::builder().src(kernel_src.clone()).build()?;
-
-        let d_c = ocl::Buffer::<ocl::prm::cl_float>::builder()
-            .queue(proque.queue().clone())
-            .len(order * order)
-            .flags(ocl::flags::MemFlags::new().write_only())
+        let proque = ocl::ProQue::builder()
+            .src(kernel_src.clone())
+            .dims(order * order)
             .build()?;
 
-        let mut kernel = proque
-            .create_kernel("mmul")?
-            .gws(global_size)
-            .lws(local_size)
-            .arg_scl(ocl::prm::Int::new(order as ocl::prm::cl_int))
-            .arg_buf(ocl::Buffer::builder()  // d_a
-                     .queue(proque.queue().clone())
-                     .len(order*order)
-                     .flags(ocl::flags::MemFlags::new()
-                            .read_only()
-                            .copy_host_ptr())
-                     .host_data(&vec![AVAL; order * order])
-                     .build()?)
-            .arg_buf(ocl::Buffer::builder() // d_b
-                     .queue(proque.queue().clone())
-                     .len(order*order)
-                     .flags(ocl::flags::MemFlags::new()
-                            .read_only()
-                            .copy_host_ptr())
-                     .host_data(&vec![BVAL; order * order])
-                     .build()?)
-            .arg_buf(&d_c);
+        let d_c = proque
+            .buffer_builder()
+            .flags(ocl::flags::MemFlags::new().write_only())
+            .build()?;
+        let mut h_c = vec![0.0; order * order];
 
-        for local_mem_size in local_mem.iter() {
-            kernel = kernel.arg_loc::<ocl::prm::cl_float>(*local_mem_size);
-        }
+        let kernel = local_mem
+            .iter()
+            .fold(
+                proque
+            .kernel_builder("mmul")
+            .global_work_size(global_size)
+            .local_work_size(local_size)
+            .arg(ocl::prm::Int::new(order as ocl::prm::cl_int))
+            .arg(&proque.buffer_builder().fill_val(AVAL).build()?)  // d_a
+            .arg(&proque.buffer_builder().fill_val(BVAL).build()?)  // d_b
+            .arg(&d_c),
+                |kernel_builder, local_mem_size| {
+                    kernel_builder.arg_local::<ocl::prm::cl_float>(*local_mem_size)
+                },
+            )
+            .build()?;
 
         for _i in 0..COUNT {
-            let mut h_c = vec![0.0; order * order];
             let start_time = std::time::Instant::now();
             unsafe {
                 kernel.enq().expect("Failed to execute OpenCL kernel");

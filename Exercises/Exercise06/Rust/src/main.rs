@@ -11,7 +11,10 @@ const BVAL: ocl::prm::cl_float = 5.0;
 const COUNT: usize = 2;
 
 fn post_rustbook() -> Result<(), ocl::error::Error> {
-    let order = match ocl::Context::builder().build()?.device_info(0, ocl::enums::DeviceInfo::MaxWorkGroupSize)? {
+    let order = match ocl::Context::builder()
+        .build()?
+        .device_info(0, ocl::enums::DeviceInfo::MaxWorkGroupSize)?
+    {
         ocl::enums::DeviceInfoResult::MaxWorkGroupSize(value) => value,
         _ => panic!(""),
     } as usize;
@@ -33,33 +36,21 @@ fn post_rustbook() -> Result<(), ocl::error::Error> {
         .dims(order * order)
         .build()?;
 
-    let d_c = ocl::Buffer::<ocl::prm::cl_float>::builder()
-        .queue(proque.queue().clone())
-        .len(order * order)
+    let d_c = proque
+        .buffer_builder()
         .flags(ocl::flags::MemFlags::new().write_only())
         .build()?;
+    let mut h_c = vec![0.0; order * order];
 
     let kernel = proque
-        .create_kernel("mmul")?
-        .arg_scl(ocl::prm::Int::new(order as ocl::prm::cl_int))
-        .arg_buf(ocl::Buffer::builder()  // d_a
-                 .queue(proque.queue().clone())
-                 .len(order*order)
-                 .flags(ocl::flags::MemFlags::new()
-                        .read_only().copy_host_ptr())
-                 .host_data(&vec![AVAL; order*order])
-                 .build()?)
-        .arg_buf(ocl::Buffer::builder()  // d_b
-                 .queue(proque.queue().clone())
-                 .len(order*order)
-                 .flags(ocl::flags::MemFlags::new()
-                        .read_only().copy_host_ptr())
-                 .host_data(&vec![BVAL; order*order])
-                 .build()?)
-        .arg_buf(&d_c);
+        .kernel_builder("mmul")
+        .arg(ocl::prm::Int::new(order as ocl::prm::cl_int))
+        .arg(&proque.buffer_builder().fill_val(AVAL).build()?)  // d_a
+        .arg(&proque.buffer_builder().fill_val(BVAL).build()?)  // d_b
+        .arg(&d_c)
+        .build()?;
 
     for _i in 0..COUNT {
-        let mut h_c = vec![0.0; order * order];
         let start_time = std::time::Instant::now();
         unsafe {
             kernel.enq().expect("Failed to execute OpenCL kernel");

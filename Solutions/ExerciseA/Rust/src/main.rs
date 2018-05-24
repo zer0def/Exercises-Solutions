@@ -22,23 +22,20 @@ fn post_rustbook(vector_size: usize) -> Result<(), ocl::error::Error> {
 
     let mut kernel_src = String::new();
     std::fs::File::open("../pi_vocl.cl")?.read_to_string(&mut kernel_src)?;
-    let proque = ocl::ProQue::builder().src(kernel_src.clone()).build()?;
-    let kernel = proque.create_kernel(kernel_name.as_str())?;
-    let device = proque.context().get_device_by_wrapping_index(0);
+    let mut proque = ocl::ProQue::builder().src(kernel_src.clone()).build()?;
 
     let mut work_groups = INSTEPS / (work_group_size * iterations);
-    let max_size = match kernel.wg_info(device, ocl::enums::KernelWorkGroupInfo::WorkGroupSize)? {
-        ocl::enums::KernelWorkGroupInfoResult::WorkGroupSize(value) => value,
-        _ => panic!(""),
-    };
 
-    if max_size > work_group_size {
-        work_group_size = max_size;
+    if proque.max_wg_size()? > work_group_size {
+        work_group_size = proque.max_wg_size()?;
         work_groups = INSTEPS / (work_group_size * iterations);
     }
 
     if work_groups < 1 {
-        work_groups = match device.info(ocl::enums::DeviceInfo::MaxComputeUnits)? {
+        work_groups = match proque
+            .device()
+            .info(ocl::enums::DeviceInfo::MaxComputeUnits)?
+        {
             ocl::enums::DeviceInfoResult::MaxComputeUnits(value) => value as usize,
             _ => panic!(""),
         };
@@ -48,9 +45,9 @@ fn post_rustbook(vector_size: usize) -> Result<(), ocl::error::Error> {
     let steps = work_group_size * iterations * work_groups;
     let step_size = 1.0 / (steps as ocl::prm::cl_float);
 
-    let d_partial_sums = ocl::Buffer::<ocl::prm::cl_float>::builder()
-        .queue(proque.queue().clone())
-        .len(work_groups)
+    proque.set_dims(work_groups);
+    let d_partial_sums = proque
+        .buffer_builder()
         .flags(ocl::flags::MemFlags::new().write_only())
         .build()?;
 
@@ -58,13 +55,15 @@ fn post_rustbook(vector_size: usize) -> Result<(), ocl::error::Error> {
     println!("{} integration steps", steps);
     let start_time = std::time::Instant::now();
 
-    let kernel = kernel
-        .gws(work_groups * work_group_size)
-        .lws(work_group_size)
-        .arg_scl(ocl::prm::Int::new(iterations as ocl::prm::cl_int))
-        .arg_scl(ocl::prm::Float::new(step_size as ocl::prm::cl_float))
-        .arg_loc::<ocl::prm::cl_float>(work_group_size)
-        .arg_buf(&d_partial_sums);
+    let kernel = proque
+        .kernel_builder(kernel_name.as_str())
+        .global_work_size(work_groups * work_group_size)
+        .local_work_size(work_group_size)
+        .arg(ocl::prm::Int::new(iterations as ocl::prm::cl_int))
+        .arg(ocl::prm::Float::new(step_size as ocl::prm::cl_float))
+        .arg_local::<ocl::prm::cl_float>(work_group_size)
+        .arg(&d_partial_sums)
+        .build()?;
 
     let start_time = std::time::Instant::now();
     unsafe {

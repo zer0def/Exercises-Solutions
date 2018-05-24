@@ -4,12 +4,16 @@ extern crate float_cmp;
 extern crate rand;
 
 use rand::Rng;
+//use std::borrow::Borrow;
+//use std::ops::Deref;
+
 use float_cmp::ApproxEqRatio;
 
 const TOL: f32 = 0.001;
 
 fn post_rustbook() -> Result<(), ocl::error::Error> {
-    let context = ocl::Context::builder().build()?;
+    //let context = ocl::Context::builder().build()?;
+    let context = std::sync::Arc::new(ocl::Context::builder().build()?);
     let kernel_src = "__kernel void vadd(
         __global float* a,
         __global float* b,
@@ -52,7 +56,8 @@ fn post_rustbook() -> Result<(), ocl::error::Error> {
     let proque = ocl::ProQue::builder()
         // ordinarily you don't need to explicitly create and assign
         // a context; added only for brevity and parity
-        .context(context)
+        //.context(context)
+        .context(std::sync::Arc::try_unwrap(context).unwrap())
         .src(kernel_src)
         .dims(size)
 //        .build(&context)
@@ -64,48 +69,31 @@ fn post_rustbook() -> Result<(), ocl::error::Error> {
             .take(size)
             .collect::<Vec<_>>()
     };
-    let h_a = generate_data();
-    let h_b = generate_data();
-    let mut h_c = vec![0.0 as ocl::prm::cl_float; size];
+    let h_a = std::sync::Arc::new(generate_data());
+    let h_b = std::sync::Arc::new(generate_data());
+    let mut h_c = std::sync::Arc::new(vec![0.0 as ocl::prm::cl_float; size]);
 
-    let build_read_buffer = |data| {
-        ocl::Buffer::<ocl::prm::cl_float>::builder()
-//            .queue(queue.clone())
-            .queue(proque.queue().clone())
-            .len(size)
-            .flags(ocl::flags::MemFlags::new().read_only().copy_host_ptr())
-            .host_data(data)
-            .build().expect("Failed to create buffer")
-    };
-    let d_a = build_read_buffer(&h_a);
-    let d_b = build_read_buffer(&h_b);
+    // puzzle: h_a.as_ref() 
+    // == h_a.deref() (requires `std::ops::Deref` trait)
+    // != h_a.borrow() (requires `std::borrow::Borrow` trait and it's impl for Arc)
 
-    let build_write_buffer = || {
-        ocl::Buffer::<ocl::prm::cl_float>::builder()
-//            .queue(queue.clone())
-            .queue(proque.queue().clone())
-            .len(size)
-            .flags(ocl::flags::MemFlags::new().write_only())
-            .build().expect("Failed to create destination buffer")
-    };
-    let d_c = build_write_buffer();
+    let d_c = std::sync::Arc::new(proque
+        .buffer_builder()
+        .flags(ocl::flags::MemFlags::new().write_only())
+        .build()?);
 
-    /*
-    let vadd = ocl::Kernel::new("vadd", &program)?
-        .queue(queue.clone())
-        .gws(size)
-*/
     let vadd = proque
-        .create_kernel("vadd")?
-        .arg_buf(&d_a)
-        .arg_buf(&d_b)
-        .arg_buf(&d_c)
-        .arg_scl(ocl::prm::Uint::new(size as ocl::prm::cl_uint));
+        .kernel_builder("vadd")
+        .arg(std::sync::Arc::new(proque.buffer_builder().copy_host_slice(h_a.as_ref()).build()?).as_ref())  // d_a
+        .arg(std::sync::Arc::new(proque.buffer_builder().copy_host_slice(h_b.as_ref()).build()?).as_ref())  // d_b
+        .arg(d_c.as_ref())
+        .arg(ocl::prm::Uint::new(size as ocl::prm::cl_uint)).build()?;
 
     unsafe {
         vadd.enq().expect("Failed to execute OpenCL kernel");
     }
-    d_c.read(&mut h_c).enq()?;
+    // std::sync::Arc::get_mut() ??
+    d_c.read(std::sync::Arc::make_mut(&mut h_c)).enq()?;
 
     let mut correct = 0;
     for (idx, result) in h_c.iter().enumerate() {
