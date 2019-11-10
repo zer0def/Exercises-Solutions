@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["zer0def <zer0def@zer0def.0>"]
 
 [dependencies]
-ocl = "0.18"
+ocl = "0.19.3"

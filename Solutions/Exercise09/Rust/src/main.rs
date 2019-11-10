@@ -48,8 +48,8 @@ fn post_rustbook() -> Result<(), ocl::error::Error> {
         .arg(d_partial_sums.deref())
         .build()?;
 
-    println!("{:?}", kernel.get_gws());
-    println!("{:?}", kernel.get_lws());
+    println!("{:?}", kernel.default_global_work_size());
+    println!("{:?}", kernel.default_local_work_size());
 
     let start_time = std::time::Instant::now();
     unsafe {

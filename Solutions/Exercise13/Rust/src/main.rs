@@ -84,8 +84,8 @@ fn post_rustbook() -> Result<(), ocl::error::Error> {
         .arg_local::<ocl::prm::cl_char>((bx + 2) * (by + 2))
         .build()?;
 
-    println!("{:?}", kernel.get_gws());
-    println!("{:?}", kernel.get_lws());
+    println!("{:?}", kernel.default_global_work_size());
+    println!("{:?}", kernel.default_local_work_size());
 
     println!("Starting state");
     print_board(h_board.clone(), nx);
